@@ -3,7 +3,16 @@
 #include <iostream>
 #include <cstring>
 
-//#define __DEBUG__
+// #define __DEBUG__
+
+template <typename _T1, typename _T2>
+struct eq
+{
+    _T1 operator()(const _T2 a)
+    {
+        return (_T1)a;
+    }
+};
 
 template <typename _T>
 class Mat
@@ -24,13 +33,13 @@ private:
     {
         // std::cout<<"called release()"<<std::endl;
         --(*(this->refcount));
-        //std::cout<<data<<' '<<*(this->refcount)<<std::endl;
+        // std::cout<<data<<' '<<*(this->refcount)<<std::endl;
         if (!(*this->refcount))
         {
             if (data)
             {
 #ifdef __DEBUG__
-                std::cout<<"delete[] "<<data<<std::endl;
+                std::cout << "delete[] " << data << std::endl;
 #endif
                 delete[] data;
             }
@@ -72,7 +81,7 @@ public:
         (*this->refcount) = 1;
         data = new _T[col * row * depth];
 #ifdef __DEBUG__
-        std::cout<<"new _T[]: "<<data<<std::endl;
+        std::cout << "new _T[]: " << data << std::endl;
 #endif
         if (data == NULL)
         {
@@ -94,7 +103,7 @@ public:
         size_t sz = col * row * depth;
         this->data = new _T[sz];
 #ifdef __DEBUG__
-        std::cout<<"new _T[]: "<<data<<std::endl;
+        std::cout << "new _T[]: " << data << std::endl;
 #endif
         if (this->data == NULL)
         {
@@ -102,7 +111,7 @@ public:
         }
         else if (data != NULL)
         {
-            for (register size_t i = 0; i < sz; ++i)
+            for (size_t i = 0; i < sz; ++i)
             {
                 this->data[i] = data[i];
             }
@@ -141,6 +150,15 @@ public:
         return *this;
     }
 
+    inline _T getElement(const size_t dx, const size_t dy, const size_t dz = 0)
+    {
+        return data[dz * this->d_col * this->d_row + dx * this->d_col + dy];
+    }
+    inline void setElement(const _T u, const size_t dx, const size_t dy, const size_t dz = 0)
+    {
+        data[dz * this->d_col * this->d_row + dx * this->d_col + dy] = u;
+    }
+
     friend std::ostream &operator<<(std::ostream &os, const Mat<_T> &a)
     {
         if (a.depth != 1)
@@ -149,9 +167,9 @@ public:
             os << "Mat(" << a.col << ", " << a.row << ")" << std::endl;
         os << "data:[";
         bool flg = 0;
-        for (register size_t k = 0; k < a.depth; ++k)
+        for (size_t k = 0; k < a.depth; ++k)
         {
-            for (register size_t i = 0; i < a.col; ++i)
+            for (size_t i = 0; i < a.col; ++i)
             {
                 if (flg)
                     os << "      ";
@@ -162,7 +180,7 @@ public:
                 }
                 else
                     os << ' ';
-                for (register size_t j = 0; j < a.row; ++j)
+                for (size_t j = 0; j < a.row; ++j)
                 {
                     os << a.data[k * a.d_col * a.d_row + (i + a.lu_col) * a.d_row + (j + a.lu_row)];
                     if (j != a.row - 1)
@@ -191,11 +209,11 @@ public:
         }
         Mat<_T> c = Mat(a.col, a.row, a.depth);
 #pragma omp parallel for
-        for (register size_t k = 0; k < this->depth; ++k)
+        for (size_t k = 0; k < this->depth; ++k)
         {
-            for (register size_t i = 0; i < this->col; ++i)
+            for (size_t i = 0; i < this->col; ++i)
             {
-                for (register size_t j = 0; j < this->row; ++j)
+                for (size_t j = 0; j < this->row; ++j)
                 {
                     c.data[k * this->col * this->row + i * this->row + j] =
                         this->data[k * this->d_col * this->d_row + (i + this->lu_col) * this->d_row + (j + this->lu_row)] +
@@ -220,11 +238,11 @@ public:
         }
         Mat<_T> c = Mat(a.col, a.row, a.depth);
 #pragma omp parallel for
-        for (register size_t k = 0; k < this->depth; ++k)
+        for (size_t k = 0; k < this->depth; ++k)
         {
-            for (register size_t i = 0; i < this->col; ++i)
+            for (size_t i = 0; i < this->col; ++i)
             {
-                for (register size_t j = 0; j < this->row; ++j)
+                for (size_t j = 0; j < this->row; ++j)
                 {
                     c.data[k * this->col * this->row + i * this->row + j] =
                         this->data[k * this->d_col * this->d_row + (i + this->lu_col) * this->d_row + (j + this->lu_row)] -
@@ -248,17 +266,18 @@ public:
             return *this;
         }
         Mat<_T> c = Mat(this->col, a.row, this->depth);
-        for(register size_t i = 0; i < this->col * a.row * this->depth; i++){
-            c.data[i]=0;
+        for (size_t i = 0; i < this->col * a.row * this->depth; i++)
+        {
+            c.data[i] = 0;
         }
 #pragma omp parallel for
-        for (register size_t de = 0; de < this->depth; ++de)
+        for (size_t de = 0; de < this->depth; ++de)
         {
-            for (register size_t i = 0; i < this->col; ++i)
+            for (size_t i = 0; i < this->col; ++i)
             {
-                for (register size_t k = 0; k < this->row; ++k)
+                for (size_t k = 0; k < this->row; ++k)
                 {
-                    for (register size_t j = 0; j < a.row; ++j)
+                    for (size_t j = 0; j < a.row; ++j)
                     {
                         c.data[de * a.row * this->col + i * a.row + j] +=
                             this->data[de * this->d_col * this->d_row + i * this->d_row + k] *
@@ -278,11 +297,11 @@ public:
         // Hard copy
         Mat<_T> c = Mat(this->col, this->row, this->depth);
         // Copy the ROI
-        for (register size_t k = 0; k < this->depth; ++k)
+        for (size_t k = 0; k < this->depth; ++k)
         {
-            for (register size_t i = 0; i < this->col; ++i)
+            for (size_t i = 0; i < this->col; ++i)
             {
-                for (register size_t j = 0; j < this->row; ++j)
+                for (size_t j = 0; j < this->row; ++j)
                 {
                     c.data[k * this->col * this->row + i * this->row + j] =
                         this->data[k * this->d_col * this->d_row + (i + this->lu_col) * this->d_row + (j + this->lu_row)];
@@ -297,8 +316,8 @@ public:
      * (lu_col, lu_row, 0) left upper bound of the subMatrix in this->data
      * lu_col & lu_row start from 0
      */
-    Mat subMatrix(const size_t col, const size_t row, const size_t depth,
-                  const size_t lu_col, const size_t lu_row)
+    Mat subMatrixAssign(const size_t col, const size_t row, const size_t depth,
+                        const size_t lu_col, const size_t lu_row)
     {
         if (lu_col + col > this->col || lu_row + row > this->row || depth > this->depth)
         {
@@ -312,5 +331,29 @@ public:
         c.lu_col = lu_col;
         c.lu_row = lu_row;
         return c;
+    }
+
+    Mat subMatrixClone(const size_t col, const size_t row, const size_t depth,
+                       const size_t lu_col, const size_t lu_row)
+    {
+        return this->subMatrixAssign(col, row, depth, lu_col, lu_row).clone();
+    }
+
+    template <typename _T2, typename _Assign = eq<_T2, _T>>
+    Mat<_T2> convert()
+    {
+        _Assign assign;
+        Mat<_T2> dist(this->col, this->row, this->depth);
+        for (size_t i = 0; i < this->depth; ++i)
+        {
+            for (size_t j = 0; j < this->col; ++j)
+            {
+                for (size_t k = 0; k < this->row; ++k)
+                {
+                    dist.setElement(assign(this->getElement(j, k, i)), j, k, i);
+                }
+            }
+        }
+        return dist;
     }
 };
