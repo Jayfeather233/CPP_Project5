@@ -51,7 +51,7 @@ public:
 class st1{
 public:
     int a,b;
-    st1(int a, int b):a(a),b(b){}
+    st1(int a=0, int b=0):a(a),b(b){}
     st1 (const st2 b){
         this->a=b.b;
         this->b=b.a;
@@ -70,8 +70,8 @@ struct ww{
 int main(){
     st2 u1[1];
     u1[0]=(st2){2,1};
-    Mat<st1> u1 = Mat<st2>(u1,1,1,1).convert<st1>();
-    Mat<st1> u2 = Mat<st2>(u1,1,1,1).convert<st1, ww>();
-    cout<<u1;
+    Mat<st1> x1 = Mat<st2>(u1,1,1,1).convert<st1>();
+    Mat<st1> x2 = Mat<st2>(u1,1,1,1).convert<st1, ww>();
+    cout<<x1;
     return 0;
 }

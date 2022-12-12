@@ -10,7 +10,7 @@ struct eq
 {
     _T1 operator()(const _T2 a)
     {
-        return (_T1)a;
+        return _T1(a);
     }
 };
 
@@ -150,13 +150,16 @@ public:
         return *this;
     }
 
-    inline _T getElement(const size_t dx, const size_t dy, const size_t dz = 0)
+    inline _T getElement(const size_t dx, const size_t dy, const size_t dz = 0) const
     {
-        return data[dz * this->d_col * this->d_row + dx * this->d_col + dy];
+        return ((dx < this->col && dy < this->row && dz < this->depth)
+                    ? data[dz * this->d_col * this->d_row + (dx + this->lu_col) * this->d_col + (dy + this->lu_row)]
+                    : _T());
     }
     inline void setElement(const _T u, const size_t dx, const size_t dy, const size_t dz = 0)
     {
-        data[dz * this->d_col * this->d_row + dx * this->d_col + dy] = u;
+        if (dx < this->col && dy < this->row && dz < this->depth)
+            data[dz * this->d_col * this->d_row + (dx + this->lu_col) * this->d_col + (dy + this->lu_row)] = u;
     }
 
     friend std::ostream &operator<<(std::ostream &os, const Mat<_T> &a)
@@ -182,7 +185,7 @@ public:
                     os << ' ';
                 for (size_t j = 0; j < a.row; ++j)
                 {
-                    os << a.data[k * a.d_col * a.d_row + (i + a.lu_col) * a.d_row + (j + a.lu_row)];
+                    os << a.getElement(i,j,k);
                     if (j != a.row - 1)
                         os << ", ";
                 }
@@ -268,7 +271,7 @@ public:
         Mat<_T> c = Mat(this->col, a.row, this->depth);
         for (size_t i = 0; i < this->col * a.row * this->depth; i++)
         {
-            c.data[i] = 0;
+            c.data[i] = _T(0);
         }
 #pragma omp parallel for
         for (size_t de = 0; de < this->depth; ++de)
@@ -292,7 +295,7 @@ public:
     /**
      * Memory hard clone a new matrix;
      */
-    Mat clone()
+    Mat clone() const
     {
         // Hard copy
         Mat<_T> c = Mat(this->col, this->row, this->depth);
@@ -303,8 +306,7 @@ public:
             {
                 for (size_t j = 0; j < this->row; ++j)
                 {
-                    c.data[k * this->col * this->row + i * this->row + j] =
-                        this->data[k * this->d_col * this->d_row + (i + this->lu_col) * this->d_row + (j + this->lu_row)];
+                    c.setElement(this->getElement(i, j, k), i, j, k);
                 }
             }
         }
@@ -317,7 +319,7 @@ public:
      * lu_col & lu_row start from 0
      */
     Mat subMatrixAssign(const size_t col, const size_t row, const size_t depth,
-                        const size_t lu_col, const size_t lu_row)
+                        const size_t lu_col, const size_t lu_row) const
     {
         if (lu_col + col > this->col || lu_row + row > this->row || depth > this->depth)
         {
@@ -334,7 +336,7 @@ public:
     }
 
     Mat subMatrixClone(const size_t col, const size_t row, const size_t depth,
-                       const size_t lu_col, const size_t lu_row)
+                       const size_t lu_col, const size_t lu_row) const
     {
         return this->subMatrixAssign(col, row, depth, lu_col, lu_row).clone();
     }
