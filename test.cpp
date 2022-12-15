@@ -19,23 +19,26 @@ int main(){
     {
         int a1[]={0,1,1,1,0,1,1,1};
         int a2[]={0,1,1,1,0,1,1,1};
-        float oneArr[]={1.1f,0.1f,0.1f,1.1f,1.1f,0.1f,0.1f,1.1f};
+        float one1Arr[]={1.1f,0.1f,0.1f,0.1f,1.1f,0.1f,0.1f,0.1f};
+        float one2Arr[]={0.1f,0.1f,0.1f,1.1f,0.1f,0.1f,0.1f,1.1f};
 
         cs205::Mat<int> x1(a1,2,2,2);
         cs205::Mat<int> x2(a2,2,2,2);
-        cs205::Mat<float> onef(oneArr,2,2,2);
-        cs205::Mat<int> onei = onef.convert<int>();
+        cs205::Mat<float> one1f(one1Arr,2,2,2);
+        cs205::Mat<float> one2f(one2Arr,2,2,2);
+        cs205::Mat<int> onei = (one1f+one2f).convert<int>();
         
         cout<<x1;
         cout<<x2;
         cout<<onei;
+        cout<<x1+onei;
 
         cout<<"-------"<<endl;
         x1 = x1.subMatrixAssign(2,2,2,0,0);
         x2 = x2.subMatrixClone(2,2,2,0,0);
         cout<<"-------"<<endl;
 
-        cout<<fast_pow(x1,2,onei);
+        cout<<fast_pow(x1,7,onei);
     }
     cout<<"End of the Matrix." << endl;
     
