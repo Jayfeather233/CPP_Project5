@@ -28,8 +28,8 @@ namespace cs205
         size_t d_col, d_row;
         // three dimention size of matrix. (col, row, depth)
         size_t col, row, depth;
-        // upper left bound of the ROI matrix in data. (lu_col, lu_row, 0)
-        size_t lu_col, lu_row;
+        // upper left bound of the ROI matrix in data. (roi_col, roi_row, 0)
+        size_t roi_col, roi_row;
         // data reference count
         size_t *refcount;
         // The data
@@ -53,13 +53,13 @@ namespace cs205
         // No boundary check
         inline _T __getElement(const size_t dx, const size_t dy, const size_t dz = 0) const
         {
-            return data[dz * this->d_col * this->d_row + (dx + this->lu_col) * this->d_col + (dy + this->lu_row)];
+            return data[dz * this->d_col * this->d_row + (dx + this->roi_col) * this->d_col + (dy + this->roi_row)];
         }
 
         // No boundary check
         inline void __setElement(const _T u, const size_t dx, const size_t dy, const size_t dz = 0)
         {
-            data[dz * this->d_col * this->d_row + (dx + this->lu_col) * this->d_col + (dy + this->lu_row)] = u;
+            data[dz * this->d_col * this->d_row + (dx + this->roi_col) * this->d_col + (dy + this->roi_row)] = u;
         }
 
     public:
@@ -77,8 +77,8 @@ namespace cs205
             this->d_col = a.d_col;
             this->d_row = a.d_row;
 
-            this->lu_col = a.lu_col;
-            this->lu_row = a.lu_row;
+            this->roi_col = a.roi_col;
+            this->roi_row = a.roi_row;
 
             this->refcount = a.refcount;
             this->data = a.data;
@@ -98,7 +98,7 @@ namespace cs205
 
             this->d_col = col;
             this->d_row = row;
-            this->lu_col = this->lu_row = 0;
+            this->roi_col = this->roi_row = 0;
 
             this->refcount = new size_t;
             (*this->refcount) = 1;
@@ -128,7 +128,7 @@ namespace cs205
 
             this->d_col = col;
             this->d_row = row;
-            this->lu_col = this->lu_row = 0;
+            this->roi_col = this->roi_row = 0;
 
             this->refcount = new size_t;
             (*this->refcount) = 1;
@@ -181,8 +181,8 @@ namespace cs205
             this->d_col = a.d_col;
             this->d_row = a.d_row;
 
-            this->lu_col = a.lu_col;
-            this->lu_row = a.lu_row;
+            this->roi_col = a.roi_col;
+            this->roi_row = a.roi_row;
 
             this->refcount = a.refcount;
             this->data = a.data;
@@ -197,14 +197,14 @@ namespace cs205
         _T getElement(const size_t dx, const size_t dy, const size_t dz = 0) const
         {
             if (dx < this->col && dy < this->row && dz < this->depth)
-                data[dz * this->d_col * this->d_row + (dx + this->lu_col) * this->d_col + (dy + this->lu_row)];
+                data[dz * this->d_col * this->d_row + (dx + this->roi_col) * this->d_col + (dy + this->roi_row)];
             else
                 throw std::out_of_range("Out of range at Matrix::getElement");
         }
         void setElement(const _T u, const size_t dx, const size_t dy, const size_t dz = 0)
         {
             if (dx < this->col && dy < this->row && dz < this->depth)
-                data[dz * this->d_col * this->d_row + (dx + this->lu_col) * this->d_col + (dy + this->lu_row)] = u;
+                data[dz * this->d_col * this->d_row + (dx + this->roi_col) * this->d_col + (dy + this->roi_row)] = u;
             else
                 throw std::out_of_range("Out of range at Matrix::getElement");
         }
@@ -271,8 +271,8 @@ namespace cs205
                     for (size_t j = 0; j < this->row; ++j)
                     {
                         c.data[k * this->col * this->row + i * this->row + j] =
-                            this->data[k * this->d_col * this->d_row + (i + this->lu_col) * this->d_row + (j + this->lu_row)] +
-                            a.data[k * a.d_col * a.d_row + (i + a.lu_col) * a.d_row + (j + a.lu_row)];
+                            this->data[k * this->d_col * this->d_row + (i + this->roi_col) * this->d_row + (j + this->roi_row)] +
+                            a.data[k * a.d_col * a.d_row + (i + a.roi_col) * a.d_row + (j + a.roi_row)];
                     }
                 }
             }
@@ -301,8 +301,8 @@ namespace cs205
                     for (size_t j = 0; j < this->row; ++j)
                     {
                         c.data[k * this->col * this->row + i * this->row + j] =
-                            this->data[k * this->d_col * this->d_row + (i + this->lu_col) * this->d_row + (j + this->lu_row)] -
-                            a.data[k * a.d_col * a.d_row + (i + a.lu_col) * a.d_row + (j + a.lu_row)];
+                            this->data[k * this->d_col * this->d_row + (i + this->roi_col) * this->d_row + (j + this->roi_row)] -
+                            a.data[k * a.d_col * a.d_row + (i + a.roi_col) * a.d_row + (j + a.roi_row)];
                     }
                 }
             }
@@ -397,13 +397,13 @@ namespace cs205
 
         /**
          * (col, row, depth) size of new matrix
-         * (lu_col, lu_row, 0) left upper bound of the subMatrix in this->data
-         * lu_col & lu_row start from 0
+         * (roi_col, roi_row, 0) left upper bound of the subMatrix in this->data
+         * roi_col & roi_row start from 0
          */
         Mat subMatrixAssign(const size_t col, const size_t row, const size_t depth,
-                            const size_t lu_col, const size_t lu_row) const
+                            const size_t roi_col, const size_t roi_row) const
         {
-            if (lu_col + col > this->col || lu_row + row > this->row || depth > this->depth)
+            if (roi_col + col > this->col || roi_row + row > this->row || depth > this->depth)
             {
                 fprintf(stderr, "subMatrix is out of the original matrix's boundary!\n");
                 throw std::out_of_range("subMatrix is out of the original matrix's boundary!");
@@ -412,15 +412,15 @@ namespace cs205
             c.col = col;
             c.row = row;
             c.depth = depth;
-            c.lu_col = lu_col;
-            c.lu_row = lu_row;
+            c.roi_col = roi_col;
+            c.roi_row = roi_row;
             return c;
         }
 
         Mat subMatrixClone(const size_t col, const size_t row, const size_t depth,
-                           const size_t lu_col, const size_t lu_row) const
+                           const size_t roi_col, const size_t roi_row) const
         {
-            return this->subMatrixAssign(col, row, depth, lu_col, lu_row).clone();
+            return this->subMatrixAssign(col, row, depth, roi_col, roi_row).clone();
         }
 
         /**
