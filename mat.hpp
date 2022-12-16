@@ -16,7 +16,7 @@ namespace cs205
     {
         _T1 operator()(const _T2 a)
         {
-            return _T1(a);
+            return static_cast<_T1>(a);
         }
     };
 
@@ -163,6 +163,16 @@ namespace cs205
             release();
         }
 
+        inline size_t get_col() const {
+            return this->col;
+        }
+        inline size_t get_row() const {
+            return this->row;
+        }
+        inline size_t get_depth() const {
+            return this->depth;
+        }
+
         /**
          * Assign two matrix together
          */
@@ -194,17 +204,31 @@ namespace cs205
         /**
          * get/setElement. With boundary check.
          */
-        _T getElement(const size_t dx, const size_t dy, const size_t dz = 0) const
+        inline _T getElement(const size_t dx, const size_t dy, const size_t dz = 0) const
         {
             if (dx < this->col && dy < this->row && dz < this->depth)
-                data[dz * this->d_col * this->d_row + (dx + this->roi_col) * this->d_col + (dy + this->roi_row)];
+                return data[dz * this->d_col * this->d_row + (dx + this->roi_col) * this->d_col + (dy + this->roi_row)];
             else
                 throw std::out_of_range("Out of range at Matrix::getElement");
         }
-        void setElement(const _T u, const size_t dx, const size_t dy, const size_t dz = 0)
+        inline void setElement(const _T u, const size_t dx, const size_t dy, const size_t dz = 0)
         {
             if (dx < this->col && dy < this->row && dz < this->depth)
                 data[dz * this->d_col * this->d_row + (dx + this->roi_col) * this->d_col + (dy + this->roi_row)] = u;
+            else
+                throw std::out_of_range("Out of range at Matrix::getElement");
+        }
+        inline void addElement(const _T u, const size_t dx, const size_t dy, const size_t dz = 0)
+        {
+            if (dx < this->col && dy < this->row && dz < this->depth)
+                data[dz * this->d_col * this->d_row + (dx + this->roi_col) * this->d_col + (dy + this->roi_row)] += u;
+            else
+                throw std::out_of_range("Out of range at Matrix::addElement");
+        }
+        _T& operator() (const size_t dx, const size_t dy, const size_t dz = 0) const
+        {
+            if (dx < this->col && dy < this->row && dz < this->depth)
+                return data[dz * this->d_col * this->d_row + (dx + this->roi_col) * this->d_col + (dy + this->roi_row)];
             else
                 throw std::out_of_range("Out of range at Matrix::getElement");
         }
@@ -252,17 +276,17 @@ namespace cs205
         template <typename _T2>
         Mat<decltype(std::declval<_T>() + std::declval<_T2>())> operator+(const Mat<_T2> &a) const
         {
-            if (a.col != this->col || a.row != this->row || a.depth != this->depth)
+            if (a.get_col() != this->col || a.get_row() != this->row || a.get_depth() != this->depth)
             {
                 fprintf(stderr, "Invalid matrix plus. Dismatch matrix size.\n");
                 throw matrix_error("Invalid matrix plus. Dismatch matrix size.");
             }
-            if (a.data == NULL || this->data == NULL)
+            if (this->data == NULL)
             {
                 fprintf(stderr, "Invalid matrix plus. NULL data.\n");
                 throw matrix_error("Invalid matrix plus. NULL data.");
             }
-            Mat<decltype(std::declval<_T>() + std::declval<_T2>())> c = Mat(a.col, a.row, a.depth);
+            Mat<decltype(std::declval<_T>() + std::declval<_T2>())> c = Mat(this->col, this->row, this->depth);
 #pragma omp parallel for
             for (size_t k = 0; k < this->depth; ++k)
             {
@@ -270,9 +294,7 @@ namespace cs205
                 {
                     for (size_t j = 0; j < this->row; ++j)
                     {
-                        c.data[k * this->col * this->row + i * this->row + j] =
-                            this->data[k * this->d_col * this->d_row + (i + this->roi_col) * this->d_row + (j + this->roi_row)] +
-                            a.data[k * a.d_col * a.d_row + (i + a.roi_col) * a.d_row + (j + a.roi_row)];
+                        c(i,j,k)=(*this)(i,j,k)+a(i,j,k);
                     }
                 }
             }
@@ -282,17 +304,17 @@ namespace cs205
         template <typename _T2>
         Mat<decltype(std::declval<_T>() - std::declval<_T2>())> operator-(const Mat<_T2> &a) const
         {
-            if (a.col != this->col || a.row != this->row || a.depth != this->depth)
+            if (a.get_col() != this->col || a.get_row() != this->row || a.get_depth() != this->depth)
             {
                 fprintf(stderr, "Invalid matrix substract. Dismatch matrix size.\n");
                 throw matrix_error("Invalid matrix substract. Dismatch matrix size.");
             }
-            if (a.data == NULL || this->data == NULL)
+            if (this->data == NULL)
             {
                 fprintf(stderr, "Invalid matrix substract. NULL data.\n");
                 throw matrix_error("Invalid matrix substract. NULL data.");
             }
-            Mat<decltype(std::declval<_T>() - std::declval<_T2>())> c = Mat(a.col, a.row, a.depth);
+            Mat<decltype(std::declval<_T>() - std::declval<_T2>())> c = Mat(this->col, this->row, this->depth);
 #pragma omp parallel for
             for (size_t k = 0; k < this->depth; ++k)
             {
@@ -300,9 +322,7 @@ namespace cs205
                 {
                     for (size_t j = 0; j < this->row; ++j)
                     {
-                        c.data[k * this->col * this->row + i * this->row + j] =
-                            this->data[k * this->d_col * this->d_row + (i + this->roi_col) * this->d_row + (j + this->roi_row)] -
-                            a.data[k * a.d_col * a.d_row + (i + a.roi_col) * a.d_row + (j + a.roi_row)];
+                        c(i,j,k)=(*this)(i,j,k)-a(i,j,k);
                     }
                 }
             }
@@ -312,18 +332,18 @@ namespace cs205
         template <typename _T2>
         Mat<decltype(std::declval<_T>() * std::declval<_T2>())> operator*(const Mat<_T2> &a) const
         {
-            if (a.depth != this->depth || a.col != this->row)
+            if (a.get_depth() != this->depth || a.get_col() != this->row)
             {
                 fprintf(stderr, "Invalid Matrix multiply. Dismatch matrix size.\n");
                 throw matrix_error("Invalid matrix multiply. Dismatch matrix size.");
             }
-            if (a.data == NULL || this->data == NULL)
+            if (this->data == NULL)
             {
                 fprintf(stderr, "Invalid matrix multiply. NULL data.\n");
                 throw matrix_error("Invalid matrix multiply. NULL data.");
             }
-            Mat<decltype(std::declval<_T>() * std::declval<_T2>())> c = Mat(this->col, a.row, this->depth);
-            for (size_t i = 0; i < this->col * a.row * this->depth; i++)
+            Mat<decltype(std::declval<_T>() * std::declval<_T2>())> c = Mat(this->col, a.get_row(), this->depth);
+            for (size_t i = 0; i < this->col * a.get_row() * this->depth; i++)
             {
                 c.data[i] = decltype(std::declval<_T>() * std::declval<_T2>())(0);
             }
@@ -334,11 +354,9 @@ namespace cs205
                 {
                     for (size_t k = 0; k < this->row; ++k)
                     {
-                        for (size_t j = 0; j < a.row; ++j)
+                        for (size_t j = 0; j < a.get_row(); ++j)
                         {
-                            c.data[de * a.row * this->col + i * a.row + j] +=
-                                this->data[de * this->d_col * this->d_row + i * this->d_row + k] *
-                                a.data[de * a.d_col * a.d_row + k * a.d_row + j];
+                            c(i,j,de)+=(*this)(i,k,de) * a(k,j,de);
                         }
                     }
                 }
@@ -412,8 +430,8 @@ namespace cs205
             c.col = col;
             c.row = row;
             c.depth = depth;
-            c.roi_col = roi_col;
-            c.roi_row = roi_row;
+            c.roi_col = roi_col + this->roi_col;
+            c.roi_row = roi_row + this->roi_row;
             return c;
         }
 
@@ -427,7 +445,7 @@ namespace cs205
          * Convert one type of matrix to another type.
          */
         template <typename _T2, typename _Assign = __converter<_T2, _T>>
-        Mat<_T2> convert()
+        Mat<_T2> convert() const
         {
             _Assign assign;
             Mat<_T2> dist(this->col, this->row, this->depth);
