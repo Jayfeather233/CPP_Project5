@@ -5,12 +5,18 @@
 
 namespace cs205
 {
+    /**
+     * Exception for matrix error.
+    */
     class matrix_error : public std::logic_error
     {
     public:
         matrix_error(const char *e) : std::logic_error(e) {}
     };
 
+    /**
+     * The default type converter.
+    */
     template <typename _T1, typename _T2>
     struct __converter
     {
@@ -35,6 +41,9 @@ namespace cs205
         // The data
         _T *data;
 
+        /**
+         * release a matrix. If no matrix is using the data, free it.
+         */
         void release()
         {
             --(*(this->refcount));
@@ -163,13 +172,19 @@ namespace cs205
             release();
         }
 
-        inline size_t get_col() const {
+        /**
+         * Some getter
+        */
+        inline size_t get_col() const
+        {
             return this->col;
         }
-        inline size_t get_row() const {
+        inline size_t get_row() const
+        {
             return this->row;
         }
-        inline size_t get_depth() const {
+        inline size_t get_depth() const
+        {
             return this->depth;
         }
 
@@ -225,7 +240,11 @@ namespace cs205
             else
                 throw std::out_of_range("Out of range at Matrix::addElement");
         }
-        _T& operator() (const size_t dx, const size_t dy, const size_t dz = 0) const
+        
+        /**
+         * With this, user can use (i,j,k) to access the element.
+        */
+        _T &operator()(const size_t dx, const size_t dy, const size_t dz = 0) const
         {
             if (dx < this->col && dy < this->row && dz < this->depth)
                 return data[dz * this->d_col * this->d_row + (dx + this->roi_col) * this->d_col + (dy + this->roi_row)];
@@ -233,6 +252,9 @@ namespace cs205
                 throw std::out_of_range("Out of range at Matrix::getElement");
         }
 
+        /**
+         * Use ostream to output.
+         */
         friend std::ostream &operator<<(std::ostream &os, const Mat<_T> &a)
         {
             if (a.depth != 1)
@@ -294,13 +316,16 @@ namespace cs205
                 {
                     for (size_t j = 0; j < this->row; ++j)
                     {
-                        c(i,j,k)=(*this)(i,j,k)+a(i,j,k);
+                        c(i, j, k) = (*this)(i, j, k) + a(i, j, k);
                     }
                 }
             }
             return c;
         }
 
+        /**
+         * Matrix operation -
+         */
         template <typename _T2>
         Mat<decltype(std::declval<_T>() - std::declval<_T2>())> operator-(const Mat<_T2> &a) const
         {
@@ -322,13 +347,16 @@ namespace cs205
                 {
                     for (size_t j = 0; j < this->row; ++j)
                     {
-                        c(i,j,k)=(*this)(i,j,k)-a(i,j,k);
+                        c(i, j, k) = (*this)(i, j, k) - a(i, j, k);
                     }
                 }
             }
             return c;
         }
 
+        /**
+         * Matrix operation *
+         */
         template <typename _T2>
         Mat<decltype(std::declval<_T>() * std::declval<_T2>())> operator*(const Mat<_T2> &a) const
         {
@@ -356,7 +384,7 @@ namespace cs205
                     {
                         for (size_t j = 0; j < a.get_row(); ++j)
                         {
-                            c(i,j,de)+=(*this)(i,k,de) * a(k,j,de);
+                            c(i, j, de) += (*this)(i, k, de) * a(k, j, de);
                         }
                     }
                 }
@@ -364,6 +392,9 @@ namespace cs205
             return c;
         }
 
+        /**
+         * Matrix operation ==
+         */
         bool operator==(const Mat &a) const
         {
             if (a.col != this->col || a.row != this->row || a.depth != this->depth)
@@ -375,21 +406,50 @@ namespace cs205
                 fprintf(stderr, "Invalid matrix substract. NULL data.\n");
                 throw matrix_error("Invalid matrix substract. NULL data.");
             }
-#pragma omp parallel for
-            for (size_t k = 0; k < this->depth; ++k)
+            //Special for float number.
+            if (typeid(_T) == typeid(float) || typeid(_T) == typeid(double) || typeid(_T) == typeid(long double))
             {
-                for (size_t i = 0; i < this->col; ++i)
+                _T epsilon;
+                if (typeid(_T) == typeid(float))
+                    epsilon = __FLT_EPSILON__;
+                else if (typeid(_T) == typeid(double))
+                    epsilon = __DBL_EPSILON__;
+                else if (typeid(_T) == typeid(long double))
+                    epsilon = __LDBL_EPSILON__;
+#pragma omp parallel for
+                for (size_t k = 0; k < this->depth; ++k)
                 {
-                    for (size_t j = 0; j < this->row; ++j)
+                    for (size_t i = 0; i < this->col; ++i)
                     {
-                        if (!(this->__getElement(i, j, k) == a.__getElement(i, j, k)))
+                        for (size_t j = 0; j < this->row; ++j)
                         {
-                            return false;
+                            if (abs(this->__getElement(i, j, k) - a.__getElement(i, j, k)) > epsilon)
+                            {
+                                return false;
+                            }
                         }
                     }
                 }
+                return true;
             }
-            return true;
+            else
+            {
+#pragma omp parallel for
+                for (size_t k = 0; k < this->depth; ++k)
+                {
+                    for (size_t i = 0; i < this->col; ++i)
+                    {
+                        for (size_t j = 0; j < this->row; ++j)
+                        {
+                            if (!(this->__getElement(i, j, k) == a.__getElement(i, j, k)))
+                            {
+                                return false;
+                            }
+                        }
+                    }
+                }
+                return true;
+            }
         }
 
         /**

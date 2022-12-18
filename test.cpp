@@ -7,10 +7,6 @@ template<typename _T>
 _T fast_pow(_T a, int b, _T one){
     _T ans = one;
     while(b){
-        cout<<"ANS:"<<endl;
-        cout<<ans;
-        cout<<"A:"<<endl;
-        cout<<a;
         if(b&1) ans = ans * a;
         a = a * a;
         b>>=1;
@@ -24,14 +20,16 @@ int main(){
         int a1[]={0,1,1,1,0,1,1,1};
         int a2[]={0,1,1,1,0,1,1,1};
         float one1Arr[]={1.1f,0.1f,0.1f,0.1f,1.1f,0.1f,0.1f,0.1f};
+        float one3Arr[]={1.1f,0.1f,0.1f,0.1f,1.1f,0.1f,0.1f,0.1f};
         int one2Arr[]={0,0,0,1,0,0,0,1};
 
         cs205::Mat<int> x1(a1,2,2,2);
         cs205::Mat<int> x2(a2,2,2,2);
         cs205::Mat<float> one1f(one1Arr,2,2,2);
+        cs205::Mat<float> one3f(one3Arr,2,2,2);
         cs205::Mat<int> one2f(one2Arr,2,2,2);
         cs205::Mat<int> onei = (one1f+one2f).convert<int>();
-        
+        cout<<(one1f==one3f)<<endl;
         cout<<x1+onei;
         cout<<x1;
         cout<<x2;
