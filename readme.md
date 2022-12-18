@@ -249,7 +249,7 @@ friend std::ostream &operator<<(std::ostream &os, const Mat<_T> &a);
 
 Example of output:
 
-![image-20221215171819958](C:\Users\jayfe\AppData\Roaming\Typora\typora-user-images\image-20221215171819958.png)
+![image1](.\img\img1.png)
 
 ### Deconstructor
 
@@ -344,7 +344,7 @@ cs205::Mat<tp1> x2 = x.convert<tp1, my_converter>();// Use user-defined converte
 
   After tested all the operators and count the new&delete numbers, I can say that my programs will **not leak memory**.
   
-  ![image-20221215171724007](C:\Users\jayfe\AppData\Roaming\Typora\typora-user-images\image-20221215171724007.png)
+  ![image2](.\img\img2.png)
   
 - Also tested the `convert` function. It successfully convert between `struct st1{}` and `struct st2{}`.
 
