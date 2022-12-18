@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <cstring>
+#include <omp.h>
 
 namespace cs205
 {
