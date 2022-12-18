@@ -6,7 +6,7 @@
 
 ## Part 1 - Analysis & Code
 
-All the things I defined are in a `namespace`
+All the things I defined are in a `namespace`. So we can use `cs205::Mat` along with `cv::Mat`.
 
 ```cpp
 namespace cs205
@@ -26,7 +26,7 @@ namespace cs205
 
 ### Definations
 
-To design a c++ class for matrices, we need to store the matrix size, matrix data and other informations.
+To design a c++ class for matrices, we need to store the matrix size, matrix data, ROI position and other informations.
 
 ```cpp
 template <typename _T>
@@ -52,7 +52,7 @@ private:
     inline void __setElement(const _T u, const size_t dx, const size_t dy, const size_t dz = 0) const;
     
 public:
-    //Assign to matrix together.
+    //Assign two matrix together.
     Mat(const Mat<_T> &a);
     Mat &operator=(const Mat<_T> &a);
     //Create new matrix.
@@ -106,9 +106,15 @@ The `roi_col`&`roi_row` are the ROI position in data.
 
 To support different data types, I use a **template class** to acheive it.
 
+Private functions are usually with no check, for faster.
+
 ### Create, Copy and Assign
 
 We provide several ways to new or copy or assign a matrix.
+
+By default, all the assign operators(`=` and assign constructor) will create a matrix that **share** the date with the original one.
+
+If you want to create a new matrix with its own data, use `clone`.
 
 #### Create a new matrix
 
@@ -157,6 +163,8 @@ Mat(const Mat<_T> &a)
 
 To avoid unexpected issues, I check the variables.
 
+If we do assign to itself, then nothing happen. If do assign to a matrix with orinial own data, then free it.
+
 ```cpp
 if (this == &a)
     return *this;
@@ -179,10 +187,11 @@ Then we know how many variables are using it.
 
 My matrix class can support several matrix operations like `+ - * ==`
 
-To support two different type of matrix to do the operations, I do the following things.
+To support **two different type** of matrix to do the operations, I do the following things.
 
 ```cpp
-decltype(std::declval<_T>() + std::declval<_T2>());
+//decltype(): get the type inside the bracket.
+decltype(std::declval<_T>() + std::declval<_T2>())
 //This will get the correct type that should be returned.
 ```
 
@@ -199,7 +208,7 @@ Mat<decltype(std::declval<_T>() * std::declval<_T2>())> operator*(const Mat<_T2>
 bool operator==(const Mat<_T> &a) const;
 ```
 
-Before these operations, I'll check the matrix size and data.
+Before these operations, I'll check the matrix size and data. If cannot operate, it will **throw an exception**.
 
 ```cpp
 //Take operator+ as an example
@@ -215,6 +224,23 @@ if (this->data == NULL)
 }
 ```
 
+Because `float`&`double` cannot use `==` directly, so i use specifical functions to override it.
+
+I find that it is not good to specify a function inside a template class, so I use several `if` to do it.
+
+```cpp
+if(typeid(_T)==typeid(float))
+{
+    ......
+    if (abs(this->__getElement(i, j, k) - a.__getElement(i, j, k))>__FLT_EPSILON__)
+    {
+        return false;
+    }
+} else if(...){
+    ...
+}
+```
+
 And can use `cout` to output.
 
 ```cpp
@@ -223,7 +249,7 @@ friend std::ostream &operator<<(std::ostream &os, const Mat<_T> &a);
 
 Example of output:
 
-(imagine a image)
+![image-20221215171819958](C:\Users\jayfe\AppData\Roaming\Typora\typora-user-images\image-20221215171819958.png)
 
 ### Deconstructor
 
@@ -250,11 +276,16 @@ void release()
 
 ### subMatrix
 
+Input the submatrix's position and size, output a submatrix which is assigned/cloned.
+
 ```cpp
-//Return a matrix with ROI in another matrix.
+//ROI matrix size:(col, row, depth)
+//ROI matrix position:(roi_col, roi_row, 0)
+
+//Return a matrix with ROI in another matrix assigned.
 Mat subMatrixAssign(const size_t col, const size_t row, const size_t depth,
                     const size_t roi_col, const size_t roi_row) const;
-//clone a submatrix.
+//clone a new submatrix.
 Mat subMatrixClone(const size_t col, const size_t row, const size_t depth,
                    const size_t roi_col, const size_t roi_row) const;
 ```
@@ -303,18 +334,23 @@ cs205::Mat<tp1> x2 = x.convert<tp1, my_converter>();// Use user-defined converte
 
   Using several random-generated matrix to do several operations and compare the result with `cv::Mat`.
 
-  **All the result are correct**. (Within a range of `1e-3`)
+  **All the result are correct**. (Within a range of $\dfrac{|a-b|}{max(1,min(a,b))*0.001}$)
+
+  ~~Unfortunately, I deleted this part of code by mistake.~~
 
 - Second is the **memory management**.
 
   With `-D__DEBUG__`, we can see how many matrix are alloced and how many are deleted.
 
   After tested all the operators and count the new&delete numbers, I can say that my programs will **not leak memory**.
-
-(imagine a image)
+  
+  ![image-20221215171724007](C:\Users\jayfe\AppData\Roaming\Typora\typora-user-images\image-20221215171724007.png)
+  
+- Also tested the `convert` function. It successfully convert between `struct st1{}` and `struct st2{}`.
 
 ## Part 4 - Difficulties & Solutions
 
 1. How to **manage the memory** is a big question. I refered the method in OpenCV, and after many debugs, it finally work without error.
-2. I want to support the matrix operations that have different types.(Like `Mat<int>`+`Mat<float>`) After searching through the Internet, I find `decltype()` to get the return type. This helps me to support different types operations.
-3. I have a usage example in test.cpp. Welcome to read.
+2. I want to support the matrix operations that have different types.(Like `Mat<int> + Mat<float>`) After searching through the Internet, I find `decltype()` to get the return type. This helps me to support different types operations.
+3. I originally want to write a spesify function for matrix multiply in `int&float&double`. But since the matrices are not aligned in the most time(When come with ROI, it get messier.), I eventually discard it, only using the fastest plain method.(But with -O3, it can run very fast.)
+4. I have a usage example in test.cpp. Welcome to read.
